@@ -1,4 +1,4 @@
 mongosv-books
 =============
 
-Spring Data MongoDB REST application
+Spring Data MongoDB Demo for MongoSV 2012
