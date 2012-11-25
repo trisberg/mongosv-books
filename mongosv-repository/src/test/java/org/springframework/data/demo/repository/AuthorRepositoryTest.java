@@ -2,6 +2,9 @@ package org.springframework.data.demo.repository;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.List;
+
+import org.bson.types.ObjectId;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.data.demo.domain.Author;
@@ -15,6 +18,17 @@ public class AuthorRepositoryTest extends AbstractRepositoryTest {
     	Author a1 = newAuthor();
     	authorRepository.save(a1);
     	assertEquals(1, authorRepository.findAll().size());
+    }
+
+    @Test
+    public void addAuthorWithId() {
+    	Author a1 = newAuthor();
+    	ObjectId id = new ObjectId();
+    	a1.setId(id.toString());
+    	authorRepository.save(a1);
+    	List<Author> authors = authorRepository.findAll(); 
+    	assertEquals(1, authors.size());
+    	assertEquals(id.toString(), authors.get(0).getId());
     }
 
     @Test

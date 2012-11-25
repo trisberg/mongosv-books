@@ -69,10 +69,32 @@ public class AuthorController {
 		return assembleResource(author);
 	}
 	
+	@RequestMapping(value="/{id}", method = RequestMethod.PUT, headers = {"content-type=application/json"})
+	@ResponseStatus(HttpStatus.CREATED)
+	@ResponseBody
+	public void putAuthor(@PathVariable String id, @RequestBody AuthorResource resource, 
+			HttpServletResponse httpServletResponse) {
+		Author author = new Author();
+		author.setId(id);
+		author.setName(resource.getName());
+		boolean exists = false;
+		if (authorRepository.findOne(id) != null) {
+			exists = true;
+		}
+		authorRepository.save(author);
+		AuthorResource responseResource = assembleResource(author);
+		httpServletResponse.setHeader("Location", responseResource.getId().getHref());
+		if (exists) {
+			httpServletResponse.setStatus(HttpStatus.NO_CONTENT.value());
+		} else {
+			httpServletResponse.setStatus(HttpStatus.CREATED.value());
+		}
+	}
+
 	@RequestMapping(method = RequestMethod.POST, headers = {"content-type=application/json"})
 	@ResponseStatus(HttpStatus.CREATED)
 	@ResponseBody
-	public AuthorResource addBook(@RequestBody AuthorResource resource, 
+	public AuthorResource addAuthor(@RequestBody AuthorResource resource, 
 			HttpServletResponse httpServletResponse) {
 		Author author = new Author();
 		author.setName(resource.getName());
