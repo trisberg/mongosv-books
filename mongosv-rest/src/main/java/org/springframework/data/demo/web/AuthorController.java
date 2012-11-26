@@ -3,9 +3,8 @@ package org.springframework.data.demo.web;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.demo.domain.Author;
@@ -16,7 +15,9 @@ import org.springframework.data.demo.repository.AuthorRepository;
 import org.springframework.data.demo.repository.BookRepository;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.ResourceSupport;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,24 +57,18 @@ public class AuthorController {
 	}
 
 	@RequestMapping(value="/{id}", method = RequestMethod.GET)
-	@ResponseBody
-	public ResourceSupport findAuthor(@PathVariable String id, 
-			HttpServletResponse httpServletResponse) {
+	public ResponseEntity<ResourceSupport> findAuthor(@PathVariable String id) {
 		Author author = authorRepository.findOne(id);
 		if (author == null) {
-			httpServletResponse.setStatus(HttpStatus.NOT_FOUND.value());
 			ResourceSupport info = new ResourceSupport();
 			info.add(linkTo(AuthorController.class).withRel("authors"));
-			return info;
+			return new ResponseEntity<ResourceSupport>(info, HttpStatus.NOT_FOUND);
 		}
-		return assembleResource(author);
+		return new ResponseEntity<ResourceSupport>(assembleResource(author), HttpStatus.OK);
 	}
 	
 	@RequestMapping(value="/{id}", method = RequestMethod.PUT, headers = {"content-type=application/json"})
-	@ResponseStatus(HttpStatus.CREATED)
-	@ResponseBody
-	public void putAuthor(@PathVariable String id, @RequestBody AuthorResource resource, 
-			HttpServletResponse httpServletResponse) {
+	public ResponseEntity<Object> putAuthor(@PathVariable String id, @RequestBody AuthorResource resource) {
 		Author author = new Author();
 		author.setId(id);
 		author.setName(resource.getName());
@@ -83,55 +78,50 @@ public class AuthorController {
 		}
 		authorRepository.save(author);
 		AuthorResource responseResource = assembleResource(author);
-		httpServletResponse.setHeader("Location", responseResource.getId().getHref());
+		HttpHeaders headers = new HttpHeaders();
+		headers.put("Location", Arrays.asList(responseResource.getId().getHref()));
 		if (exists) {
-			httpServletResponse.setStatus(HttpStatus.NO_CONTENT.value());
+			return new ResponseEntity<Object>(null, headers, HttpStatus.NO_CONTENT);
 		} else {
-			httpServletResponse.setStatus(HttpStatus.CREATED.value());
+			return new ResponseEntity<Object>(null, headers, HttpStatus.CREATED);
 		}
 	}
 
 	@RequestMapping(method = RequestMethod.POST, headers = {"content-type=application/json"})
-	@ResponseStatus(HttpStatus.CREATED)
-	@ResponseBody
-	public AuthorResource addAuthor(@RequestBody AuthorResource resource, 
-			HttpServletResponse httpServletResponse) {
+	public ResponseEntity<AuthorResource> addAuthor(@RequestBody AuthorResource resource) {
 		Author author = new Author();
 		author.setName(resource.getName());
 		authorRepository.save(author);
 		AuthorResource responseResource = assembleResource(author);
-		httpServletResponse.setHeader("Location", responseResource.getId().getHref());
-		return responseResource;
+		HttpHeaders headers = new HttpHeaders();
+		headers.put("Location", Arrays.asList(responseResource.getId().getHref()));
+		return new ResponseEntity<AuthorResource>(responseResource, headers, HttpStatus.CREATED);
 	}
 
 	@RequestMapping(value="/{id}", method = RequestMethod.DELETE)
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ResponseBody
 	public void deleteBook(@PathVariable String id) {
 		authorRepository.delete(id);
 	}
 
 	@RequestMapping(value="/{id}/books", method = RequestMethod.GET)
-	@ResponseBody
-	public List<BookResource> findBooksByAuthor(@PathVariable String id, 
-			HttpServletResponse httpServletResponse) {
+	public ResponseEntity<List<BookResource>> findBooksByAuthor(@PathVariable String id) {
 		Author author = authorRepository.findOne(id);
 		List<BookResource> books = new ArrayList<BookResource>();
 		if (author == null) {
-			httpServletResponse.setStatus(HttpStatus.NOT_FOUND.value());
-			return books;
+			return new ResponseEntity<List<BookResource>>(books, HttpStatus.NOT_FOUND);
 		}
 		for (Book book : bookRepository.findByAuthors(author)) {
 			books.add(BookController.assembleResource(book));
 		}
-		return books;
+		return new ResponseEntity<List<BookResource>>(books, HttpStatus.OK);
 	}
 	
 	public static AuthorResource assembleResource(Author author) {
 		AuthorResource resource = new AuthorResource(author.getName());
 		Link self = linkTo(AuthorController.class).slash(author.getId()).withSelfRel();
 		resource.add(self);
-		Link bookLink = linkTo(BookController.class).slash(author.getId()).slash("books").withRel("books");
+		Link bookLink = linkTo(AuthorController.class).slash(author.getId()).slash("books").withRel("books");
 		resource.add(bookLink);
 		return resource;		
 	}

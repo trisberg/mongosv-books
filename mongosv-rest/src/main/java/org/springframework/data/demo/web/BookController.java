@@ -2,10 +2,11 @@ package org.springframework.data.demo.web;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
-import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.demo.domain.Author;
@@ -16,7 +17,10 @@ import org.springframework.data.demo.repository.AuthorRepository;
 import org.springframework.data.demo.repository.BookRepository;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.ResourceSupport;
+import org.springframework.hateoas.mvc.ControllerLinkBuilder;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.util.UriTemplate;
 
 /**
  * Handles book requests for the application.
@@ -48,8 +53,7 @@ public class BookController {
 	}
 
 	@RequestMapping(method = RequestMethod.GET)
-	@ResponseBody
-	public List<BookResource> all() {
+	public @ResponseBody List<BookResource> all() {
 		List<BookResource> bookResources = new ArrayList<BookResource>();
 		for (Book book : bookRepository.findAll()) {
 			bookResources.add(assembleResource(book));
@@ -58,8 +62,7 @@ public class BookController {
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, params = "category")
-	@ResponseBody
-	public List<BookResource> findForCategory(@RequestParam String category) {
+	public @ResponseBody List<BookResource> findForCategory(@RequestParam String category) {
 		List<BookResource> bookResources = new ArrayList<BookResource>();
 		List<Book> books;
 		if (category != null) {
@@ -74,23 +77,18 @@ public class BookController {
 	}
 	
 	@RequestMapping(value="/{isbn}", method = RequestMethod.GET)
-	@ResponseBody
-	public ResourceSupport findBook(@PathVariable String isbn, 
-			HttpServletResponse httpServletResponse) {
+	public ResponseEntity<ResourceSupport> findBook(@PathVariable String isbn) {
 		Book book = bookRepository.findOne(isbn);
 		if (book == null) {
-			httpServletResponse.setStatus(HttpStatus.NOT_FOUND.value());
 			ResourceSupport info = new ResourceSupport();
 			info.add(linkTo(BookController.class).withRel("books"));
-			return info;
+			return new ResponseEntity<ResourceSupport>(info, HttpStatus.NOT_FOUND);
 		}
-		return assembleResource(book);
+		return new ResponseEntity<ResourceSupport>(assembleResource(book), HttpStatus.OK);
 	}
 
 	@RequestMapping(value="/{isbn}", method = RequestMethod.PUT, headers = {"content-type=application/json"})
-	@ResponseBody
-	public void addBook(@RequestBody BookResource resource, @PathVariable String isbn, 
-			HttpServletResponse httpServletResponse) {
+	public ResponseEntity<Object> addBook(@RequestBody BookResource resource, @PathVariable String isbn) {
 		Book book = new Book();
 		book.setIsbn(isbn);
 		book.setTitle(resource.getTitle());
@@ -103,73 +101,91 @@ public class BookController {
 		}
 		bookRepository.save(book);
 		BookResource responseResource = assembleResource(book);
-		httpServletResponse.setHeader("Location", responseResource.getId().getHref());
+		HttpHeaders headers = new HttpHeaders();
+		headers.put("Location", Arrays.asList(responseResource.getId().getHref()));
 		if (exists) {
-			httpServletResponse.setStatus(HttpStatus.NO_CONTENT.value());
+			return new ResponseEntity<Object>(null, headers, HttpStatus.NO_CONTENT);
 		} else {
-			httpServletResponse.setStatus(HttpStatus.CREATED.value());
+			return new ResponseEntity<Object>(null, headers, HttpStatus.CREATED);
 		}
 	}
 
 	@RequestMapping(value="/{isbn}", method = RequestMethod.DELETE)
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ResponseBody
-	public void deleteBook(@PathVariable String isbn) {
+	public @ResponseBody void deleteBook(@PathVariable String isbn) {
 		bookRepository.delete(isbn);
 	}
 
 	@RequestMapping(value="/{isbn}/authors", method = RequestMethod.GET)
-	@ResponseBody
-	public List<AuthorResource> findBookAuthors(@PathVariable String isbn, 
-			HttpServletResponse httpServletResponse) {
+	public ResponseEntity<List<AuthorResource>> findBookAuthors(@PathVariable String isbn) {
 		Book book = bookRepository.findOne(isbn);
 		List<AuthorResource> authors = new ArrayList<AuthorResource>();
 		if (book == null) {
-			httpServletResponse.setStatus(HttpStatus.NOT_FOUND.value());			
-			return authors;
+			return new ResponseEntity<List<AuthorResource>>(authors, HttpStatus.NOT_FOUND);
 		}
 		for (Author author : book.getAuthors()) {
-			authors.add(AuthorController.assembleResource(author));
+			AuthorResource resource = AuthorController.assembleResource(author);
+			Link bookLink = linkTo(BookController.class).slash(isbn).slash("authors").slash(author.getId()).withRel("bookAuthor");
+			resource.add(bookLink);
+			authors.add(resource);
 		}
-		return authors;
+		return new ResponseEntity<List<AuthorResource>>(authors, HttpStatus.OK);
 	}
 
-	@RequestMapping(value="/{isbn}/authors/{id}", method = RequestMethod.POST)
-	@ResponseBody
-	public void addBookAuthor(@PathVariable String isbn, @PathVariable String id, 
-			HttpServletResponse httpServletResponse) {
+	@RequestMapping(value="/{isbn}/authors", method = RequestMethod.POST, headers = "content-type=text/uri-list")
+	public ResponseEntity<Object> addBookAuthor(@PathVariable String isbn, @RequestBody String body) {
 		Book book = bookRepository.findOne(isbn);
 		if (book == null) {
-			httpServletResponse.setStatus(HttpStatus.NOT_FOUND.value());			
+			return new ResponseEntity<Object>("", HttpStatus.BAD_REQUEST);
 		}
+		String id;
+		id = matchAuthorIdFromLink(body);
+		if (id == null) {
+			return new ResponseEntity<Object>("", HttpStatus.BAD_REQUEST);
+		}
+		URI bookLink = linkTo(BookController.class).slash(isbn).slash("authors").slash(id).toUri();
 		for (Author author : book.getAuthors()) {
 			if (author.getId().equals(id)) {
-				httpServletResponse.setStatus(HttpStatus.NO_CONTENT.value());			
-				return;
+				HttpHeaders headers = new HttpHeaders();
+				headers.put("Location", Arrays.asList(bookLink.toString()));
+				return new ResponseEntity<Object>(headers, HttpStatus.NO_CONTENT);
 			}			
 		}
 		Author author = authorRepository.findOne(id);
+		if (author == null) {
+			return new ResponseEntity<Object>("", HttpStatus.NOT_FOUND);
+		}
 		book.addAuthor(author);
 		bookRepository.save(book);
-		httpServletResponse.setStatus(HttpStatus.CREATED.value());			
+		HttpHeaders headers = new HttpHeaders();
+		return new ResponseEntity<Object>(headers, HttpStatus.CREATED);
+	}
+
+	public String matchAuthorIdFromLink(String uri) {
+		UriTemplate ut = new UriTemplate(ControllerLinkBuilder.linkTo(AuthorController.class) + "/{id}");
+		Map<String, String> ids = ut.match(uri);
+		if (ids.get("id") == null) {
+			return null;
+		}
+		String id = ids.get("id");
+		return id;
 	}
 
 	@RequestMapping(value="/{isbn}/authors/{id}", method = RequestMethod.DELETE)
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ResponseBody
-	public void removeBookAuthor(@PathVariable String isbn, @PathVariable String id, 
-			HttpServletResponse httpServletResponse) {
+	public ResponseEntity<Object> removeBookAuthor(@PathVariable String isbn, @PathVariable String id) {
 		Book book = bookRepository.findOne(isbn);
 		if (book == null) {
-			httpServletResponse.setStatus(HttpStatus.NOT_FOUND.value());			
+			return new ResponseEntity<Object>("", HttpStatus.BAD_REQUEST);
 		}
 		for (Author author : book.getAuthors()) {
 			if (author.getId().equals(id)) {
 				book.removeAuthor(author);
+				bookRepository.save(book);
 				break;
-			}			
+			} else {
+			}
 		}
-		bookRepository.save(book);
+		return new ResponseEntity<Object>(HttpStatus.NO_CONTENT);
 	}
 
 	public static BookResource assembleResource(Book book) {
