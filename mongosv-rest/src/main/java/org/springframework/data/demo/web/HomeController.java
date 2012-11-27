@@ -16,8 +16,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class HomeController {
 	
 	@RequestMapping(method = RequestMethod.GET)
-	@ResponseBody
-	public ResourceSupport info() {
+	public @ResponseBody ResourceSupport info() {
 		ResourceSupport info = new ResourceSupport();
 		info.add(linkTo(AuthorController.class).withRel("authors"));
 		info.add(linkTo(BookController.class).withRel("books"));
