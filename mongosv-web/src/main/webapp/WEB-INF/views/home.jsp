@@ -58,7 +58,7 @@
 							<td>${book.authors}</td>
 							<td>${book.isbn}</td>
 							<td>${book.price}</td>
-							<td><fmt:formatDate value="${book.published}" type="both" pattern="MM/dd/yyyy" /></td>
+							<td><spring:eval expression="book.published"/></td>
 							<td><a href="edit/${book.isbn}">Edit Book</a></td>
 						</tr>
 					</c:forEach>

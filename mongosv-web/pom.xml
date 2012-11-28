@@ -12,12 +12,41 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>appfog</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.cloudfoundry</groupId>
+                        <artifactId>cf-maven-plugin</artifactId>
+                        <configuration>
+                            <server>appfog</server>
+                            <target>https://api.appfog.com</target>
+                            <url>mongosv-web.aws.af.cm</url>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <dependencies>
         <!-- Spring Data -->
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-mongodb</artifactId>
-            <version>1.1.0.RELEASE</version>
+            <version>1.1.1.RELEASE</version>
         </dependency>
         <!-- Spring -->
         <dependency>
@@ -47,6 +76,13 @@
             <groupId>cglib</groupId>
             <artifactId>cglib-nodep</artifactId>
             <version>2.2.2</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!--  Joda Time -->
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>1.6.2</version>
             <scope>runtime</scope>
         </dependency>
         <!-- Logging -->
@@ -113,6 +149,14 @@
         </repository>
     </repositories>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>repository.springframework.maven.milestone</id>
+            <name>Spring Framework Maven Milestone Repository</name>
+            <url>http://maven.springframework.org/milestone</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <build>
         <plugins>
             <plugin>
@@ -121,13 +165,6 @@
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <configuration>
-                    <warName>mongosv-web</warName>
                 </configuration>
             </plugin>
             <plugin>
@@ -142,6 +179,23 @@
                 <artifactId>tomcat-maven-plugin</artifactId>
                 <version>1.0-beta-1</version>
             </plugin>                        
+            <plugin>
+                <groupId>org.cloudfoundry</groupId>
+                <artifactId>cf-maven-plugin</artifactId>
+                <version>1.0.0.M4</version>
+                <configuration>
+                    <server>cloudfoundry</server>
+                    <target>http://api.cloudfoundry.com</target>
+                    <url>mongosv-web.cloudfoundry.com</url>
+                    <memory>512</memory>
+                    <services>
+                        <service>
+                            <name>mongosv-books</name>
+                            <label>mongodb</label>
+                        </service>
+                    </services>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

@@ -1,17 +1,13 @@
 package org.springframework.data.demo.web;
 
-import java.beans.PropertyEditorSupport;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.propertyeditors.CustomDateEditor;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.demo.domain.Author;
 import org.springframework.data.demo.domain.Book;
 import org.springframework.data.demo.domain.SearchCriteria;
@@ -21,8 +17,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,11 +30,13 @@ import org.springframework.web.bind.support.SessionStatus;
 public class HomeController {
 	
 	private final List<String> categories = 
-			Arrays.asList("Java", "Spring", "NoSQL", "Big Data", "Mongo DB", "Cloud Foundry", "Scala", "Ruby", "Grails");
+			Arrays.asList("Java", "Spring", "NoSQL", "Big Data", "MongoDB", "Cloud Foundry", "Scala", "Ruby", "Grails");
 	
 	private final List<String> years = 
 			Arrays.asList("", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011" ,"2012");
 	
+	@Autowired
+	ConversionService cs;
 	
 	@Autowired
 	BookShelf bookShelf;
@@ -48,19 +44,6 @@ public class HomeController {
 	@Autowired
 	DbHelper dbHelper;
 	
-	@InitBinder
-	public void initBinder(Locale locale, WebDataBinder dataBinder) {
-	    SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy");
-		dataBinder.registerCustomEditor(Date.class, null, new CustomDateEditor(dateFormat, true));
-        dataBinder.registerCustomEditor(Author.class, new PropertyEditorSupport() {
-            @Override
-            public void setAsText(String text) {
-            	Author a = dbHelper.findAuthorById(text);
-                setValue(a);
-            }
-
-        });
-	}
 
 	/**
 	 * Simply selects the home view to render by returning its name.
@@ -205,13 +188,6 @@ public class HomeController {
 	public String dump(Model model) {
 		model.addAttribute("bookdata", dbHelper.getDump(Book.class));
 		model.addAttribute("authordata", dbHelper.getDump(Author.class));
-		return "dump";
-	}
-
-	@RequestMapping(value={"/test"}, method=RequestMethod.GET)
-	public String test(Model model) {
-		model.addAttribute("bookdata", "This is a");
-		model.addAttribute("authordata", "TEST!!!");
 		return "dump";
 	}
 }

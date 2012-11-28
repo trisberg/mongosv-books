@@ -92,11 +92,11 @@
 					</div>
 					<div class="span-7 last">
 						<p><form:input path="published"/></p>
-						<script type="text/javascript">
+  						<script type="text/javascript">
 							Spring.addDecoration(new Spring.ElementDecoration({
 								elementId : "published",
 								widgetType : "dijit.form.DateTextBox",
-								widgetAttrs : { datePattern : "MM-dd-yyyy", required : true }}));  
+								widgetAttrs : { datePattern : "MM/dd/yyyy", required : true }}));  
 						</script>
 					</div>
 				</div>

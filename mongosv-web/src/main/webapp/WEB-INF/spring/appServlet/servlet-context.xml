@@ -10,7 +10,15 @@
 	<!-- DispatcherServlet Context: defines this servlet's request-processing infrastructure -->
 	
 	<!-- Enables the Spring MVC @Controller programming model -->
-	<annotation-driven />
+	<annotation-driven conversion-service="conversionService"/>
+
+	<beans:bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+	    <beans:property name="converters">
+	        <beans:list>
+	            <beans:bean class="org.springframework.data.demo.support.StringToAuthorConverter"/>
+	        </beans:list>
+	    </beans:property>
+	</beans:bean>
 
 	<!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources directory -->
 	<resources mapping="/resources/**" location="/resources/" />
@@ -22,7 +30,5 @@
 	</beans:bean>
 	
 	<context:component-scan base-package="org.springframework.data" />
-	
-	
 	
 </beans:beans>

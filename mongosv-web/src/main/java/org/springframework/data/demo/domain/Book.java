@@ -10,6 +10,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Document
 public class Book {
@@ -25,6 +26,7 @@ public class Book {
 	private BigDecimal price;
 	
 	@Indexed
+	@DateTimeFormat(pattern = "MM/dd/yyyy")
 	private Date published;
 	
 	private Set<String> categories;
