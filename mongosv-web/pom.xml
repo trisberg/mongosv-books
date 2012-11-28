@@ -34,6 +34,7 @@
                             <server>appfog</server>
                             <target>https://api.appfog.com</target>
                             <url>mongosv-web.aws.af.cm</url>
+                            <memory>1024</memory>
                         </configuration>
                     </plugin>
                 </plugins>
