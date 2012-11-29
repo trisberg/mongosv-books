@@ -15,12 +15,6 @@
 
     <profiles>
         <profile>
-            <id>default</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-        <profile>
             <id>appfog</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
@@ -152,9 +146,9 @@
 
     <pluginRepositories>
         <pluginRepository>
-            <id>repository.springframework.maven.milestone</id>
+            <id>repository.springsource.maven.milestone</id>
             <name>Spring Framework Maven Milestone Repository</name>
-            <url>http://maven.springframework.org/milestone</url>
+            <url>http://repo.springsource.org/libs-milestone</url>
         </pluginRepository>
     </pluginRepositories>
 
