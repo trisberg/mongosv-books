@@ -1,0 +1,8 @@
+
+	@Autowired
+	private DeveloperRepository developerRespository;
+
+
+	{
+		developerRespository.save(developer);
+	}

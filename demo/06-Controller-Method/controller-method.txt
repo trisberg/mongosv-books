@@ -1,0 +1,15 @@
+	/**
+	 * Add new developer.
+	 */
+	@RequestMapping(value = "/new", method = RequestMethod.GET)
+	public String newDeveloper(Model model) {
+		
+		Developer developer = new Developer();
+		model.addAttribute("developer", developer);
+		
+		List<String> languages = 
+				Arrays.asList("Java", "Scala", "Ruby", "Groovy", "Clojure");
+		model.addAttribute("languages", languages);
+		
+		return "developer";
+	}
