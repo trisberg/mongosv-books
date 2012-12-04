@@ -13,3 +13,17 @@
 		
 		return "developer";
 	}
+
+	/**
+	 * Save the new developer.
+	 */
+	@RequestMapping(value = "/new", method = RequestMethod.POST)
+	public String addBook(@ModelAttribute("developer") Developer developer, BindingResult result, SessionStatus status) {
+		
+		if (developer != null) {
+			status.setComplete();
+			//developerRespository.save(developer);
+		}
+		
+		return "redirect:/";
+	}
